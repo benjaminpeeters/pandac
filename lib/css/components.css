@@ -1,0 +1,247 @@
+/* 
+ * Component styles for Pandac
+ * Contains buttons, tables, code blocks, and other UI components
+ */
+
+/* Theme toggle button */
+.theme-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  font-size: 20px;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  background-color: #444;
+}
+
+/* Light version of the toggle button for dark mode */
+.dark-theme .theme-toggle {
+  background-color: #f0f0f0;
+  color: #333;
+  box-shadow: 0 2px 5px rgba(255, 255, 255, 0.2);
+}
+
+.dark-theme .theme-toggle:hover {
+  background-color: #ffffff;
+}
+
+/* Sidebar toggle buttons */
+.sidebar-toggle {
+  position: fixed;
+  z-index: 1001;
+  padding: 8px;
+  background: var(--color-button-bg);
+  border: 1px solid var(--color-button-border);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px var(--color-shadow);
+  display: none;
+  width: 36px;
+  height: 36px;
+  text-align: center;
+  line-height: 1;
+  transition: all 0.3s ease;
+  color: var(--color-button-text);
+}
+
+.sidebar-toggle:hover {
+  background: var(--color-button-hover);
+  transform: scale(1.05);
+}
+
+.sidebar-toggle svg {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  stroke: currentColor;
+}
+
+/* Code blocks - Theme-aware styling for syntax highlighting */
+.code-block {
+  position: relative;
+  margin-bottom: 1.5rem;
+  background: var(--color-code-bg);
+  border-radius: 5px;
+  overflow: visible; /* Allow buttons to be visible */
+  box-shadow: 0 2px 10px var(--color-shadow);
+}
+
+pre {
+  padding: 1em;
+  margin: 0; /* Remove default margin */
+  overflow-x: auto !important; /* Force horizontal scroll */
+  background: transparent !important; /* No background on pre */
+  position: relative;
+  max-width: 100%; /* Prevent overflow of container */
+  display: block; /* Ensure block display */
+  color: var(--color-code-text);
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  white-space: pre; /* Ensure code doesn't wrap */
+  font-family: 'Consolas', 'Monaco', 'Menlo', monospace; /* Better code fonts */
+}
+
+/* Syntax highlighting - using theme variables */
+.sourceCode .kw { color: var(--color-code-keyword); } /* Keywords */
+.sourceCode .dt { color: var(--color-code-variable); } /* Data types */
+.sourceCode .dv { color: var(--color-code-number); } /* Decimal values */
+.sourceCode .bn { color: var(--color-code-number); } /* Base-N numbers */
+.sourceCode .fl { color: var(--color-code-number); } /* Float numbers */
+.sourceCode .ch { color: var(--color-code-string); } /* Characters */
+.sourceCode .st { color: var(--color-code-string); } /* Strings */
+.sourceCode .co { color: var(--color-code-comment); font-style: italic; } /* Comments */
+.sourceCode .ot { color: var(--color-code-function); } /* Other tokens */
+.sourceCode .al { color: var(--color-code-variable); } /* Alerts/Errors */
+.sourceCode .fu { color: var(--color-code-function); } /* Functions */
+.sourceCode .va { color: var(--color-code-variable); } /* Variables */
+.sourceCode .cf { color: var(--color-code-keyword); } /* Control flow */
+.sourceCode .op { color: var(--color-code-function); } /* Operators */
+.sourceCode .bu { color: var(--color-code-function); } /* Built-ins */
+.sourceCode .ex { color: var(--color-code-function); } /* Extensions */
+.sourceCode .pp { color: var(--color-code-keyword); } /* Preprocessor */
+.sourceCode .im { color: var(--color-code-keyword); } /* Imports */
+.sourceCode .do { color: var(--color-code-comment); font-style: italic; } /* Documentation */
+.sourceCode .an { color: var(--color-code-comment); font-style: italic; } /* Annotations */
+.sourceCode .cv { color: var(--color-code-comment); font-style: italic; } /* Comments vars */
+.sourceCode .in { color: var(--color-code-comment); font-style: italic; } /* Information */
+
+/* Inline code styling */
+:not(pre) > code {
+  background: var(--color-code-bg);
+  color: var(--color-code-text);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* Copy button for code blocks */
+.copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+/* Hide any buttons added by Pandoc or other libraries */
+button:not(.copy-button):not(.sidebar-toggle):not(.theme-toggle):not(.image-expand-button):not(.lightbox-button):not(.lightbox-close) {
+  display: none !important;
+}
+
+body.light-theme .copy-button {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #555;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.dark-theme .copy-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ddd;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.copy-button:hover {
+  background: var(--color-button-hover);
+  color: var(--color-button-text);
+}
+
+/* Table styling */
+table {
+  width: 100%;
+  margin-bottom: 2rem;
+  border-collapse: collapse;
+  overflow-x: auto;
+  display: block;
+  font-size: 0.9em;
+  color: var(--color-text);
+}
+
+@media (min-width: 768px) {
+  table {
+    display: table;
+    overflow-x: visible;
+  }
+}
+
+table thead {
+  background-color: var(--color-sidebar-bg);
+  border-bottom: 2px solid var(--color-link);
+}
+
+table th {
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: bold;
+  color: var(--color-heading);
+}
+
+table td {
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+table tbody tr:nth-child(even) {
+  background-color: var(--color-table-alt);
+}
+
+body.light-theme table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+body.dark-theme table tbody tr:nth-child(even) {
+  background-color: #252525;
+}
+
+body.light-theme table tbody tr:hover {
+  background-color: #eef5f9;
+}
+
+body.dark-theme table tbody tr:hover {
+  background-color: #2c3841;
+}
+
+table tbody tr:hover {
+  transition: background-color 0.3s ease;
+}
+
+/* For tables with a caption */
+table caption {
+  caption-side: top;
+  font-style: italic;
+  margin-bottom: 10px;
+  color: var(--color-text-secondary);
+}
+
+/* For when you want to emphasize specific cells */
+body.light-theme table .highlight {
+  background-color: #fff4dd;
+}
+
+body.dark-theme table .highlight {
+  background-color: #3a3624;
+}

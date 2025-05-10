@@ -1,0 +1,511 @@
+#!/bin/bash
+# pandac - Pandoc Academic Document Converter
+# A tool for converting between academic document formats using pandoc
+
+VERSION="0.1.0"
+
+# Find the installation directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
+TEMPLATES_DIR="$(dirname "$SCRIPT_DIR")/templates"
+# Look for a local config dir first, then fallback to user config
+if [ -f "./.config/pandac/config.sh" ]; then
+    CONFIG_DIR="./.config/pandac"
+elif [ -f "./config/pandac/config.sh" ]; then
+    CONFIG_DIR="./config/pandac"
+else
+    CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/pandac"
+fi
+
+# Create config directory if it doesn't exist
+mkdir -p "$CONFIG_DIR"
+
+# Default config file
+CONFIG_FILE="$CONFIG_DIR/config.sh"
+
+# Create default config if it doesn't exist
+if [ ! -f "$CONFIG_FILE" ]; then
+    cat > "$CONFIG_FILE" << EOL
+# Pandac configuration file
+
+# Default bibliography file(s) - comma-separated list
+DEFAULT_BIBLIOGRAPHY="$HOME/MEGA/config/latex/bibliography/bibliographie.bib"
+
+# Default output formats (when no format is specified)
+# Comma-separated list of: pdf,html,tex,docx
+DEFAULT_FORMATS="pdf,html"
+
+# Always include table of contents (true/false)
+ALWAYS_TOC="true"
+
+# Default PDF engine (xelatex, pdflatex, lualatex)
+PDF_ENGINE="xelatex"
+
+# Default template for HTML
+HTML_TEMPLATE=""
+
+# Default template for PDF/LaTeX
+PDF_TEMPLATE=""
+
+# Default CSL citation style file
+CSL_STYLE=""
+
+# Include clipboard.js for code blocks by default (true/false)
+DEFAULT_CLIPBOARD="true"
+
+# Extra pandoc options for specific formats
+# PDF_EXTRA_OPTS="--variable=geometry:margin=1in"
+# HTML_EXTRA_OPTS=""
+# TEX_EXTRA_OPTS=""
+# DOCX_EXTRA_OPTS=""
+EOL
+    echo "Created default configuration file at $CONFIG_FILE"
+fi
+
+# Source config file
+source "$CONFIG_FILE"
+
+# Default values
+bibliography=""  # We'll only use DEFAULT_BIBLIOGRAPHY if no bib is found
+output_formats="${DEFAULT_FORMATS:-html}"
+output_file=""
+input_file=""
+toc="${ALWAYS_TOC:-true}"
+standalone=true
+math=true
+citations=true
+include_clipboard="${DEFAULT_CLIPBOARD:-false}"
+config_mode=false
+
+function print_usage() {
+    echo "pandac v$VERSION - Pandoc Academic Document Converter"
+    echo ""
+    echo "Usage: pandac [options] [bibliography.bib,...] input.md [output_file]"
+    echo ""
+    echo "Options:"
+    echo "  -f, --format FORMAT       Output format(s): html, pdf, tex, docx (default: $output_formats)"
+    echo "                            Multiple formats can be specified with commas: pdf,html,tex"
+    echo "  -b, --bibliography FILE   Specify bibliography file(s) explicitly"
+    echo "  -o, --output FILE         Specify output file (default: input.[format])"
+    echo "  -n, --no-toc              Disable table of contents"
+    echo "  -p, --plain               Disable standalone mode"
+    echo "  -m, --no-math             Disable math rendering"
+    echo "  -c, --no-citations        Disable citation processing"
+    echo "  -s, --clipboard           Include clipboard.js for code copying (HTML only)"
+    echo "  --config                  Edit configuration settings"
+    echo "  -h, --help                Display this help message"
+    echo "  -v, --version             Display version information"
+    echo ""
+    echo "Examples:"
+    echo "  pandac document.md                     # Convert to default formats ($output_formats)"
+    echo "  pandac document.md output.pdf          # Convert to PDF with custom filename"
+    echo "  pandac refs.bib document.md            # Use refs.bib as bibliography"
+    echo "  pandac refs.bib,extra.bib document.md  # Use multiple bibliography files"
+    echo "  pandac document.md refs.bib output.pdf # Another way to specify bibliography and output"
+    echo "  pandac -f pdf,html,tex document.md     # Convert to multiple formats"
+    echo "  pandac --config                        # Edit configuration"
+    echo ""
+    exit 1
+}
+
+function print_version() {
+    echo "pandac v$VERSION"
+    echo "Copyright (c) $(date +%Y) Benjamin Peeters"
+    echo "License: AGPL-3.0"
+    exit 0
+}
+
+function edit_config() {
+    echo "Opening configuration file in $EDITOR..."
+    if [ -z "$EDITOR" ]; then
+        EDITOR="vi"
+    fi
+    $EDITOR "$CONFIG_FILE"
+    
+    echo "Configuration updated. Changes will be applied to future pandac commands."
+    exit 0
+}
+
+# Collect files by type
+md_files=()
+bib_files=()
+output_files=()
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -f|--format)
+            output_formats="$2"
+            shift 2
+            ;;
+        -b|--bibliography)
+            bibliography="$2"
+            shift 2
+            ;;
+        -o|--output)
+            output_file="$2"
+            shift 2
+            ;;
+        -n|--no-toc)
+            toc=false
+            shift
+            ;;
+        -p|--plain)
+            standalone=false
+            shift
+            ;;
+        -m|--no-math)
+            math=false
+            shift
+            ;;
+        -c|--no-citations)
+            citations=false
+            shift
+            ;;
+        -s|--clipboard)
+            include_clipboard=true
+            shift
+            ;;
+        --config)
+            config_mode=true
+            shift
+            ;;
+        -h|--help)
+            print_usage
+            ;;
+        -v|--version)
+            print_version
+            ;;
+        *)
+            if [[ "$1" == -* ]]; then
+                echo "Unknown option: $1"
+                print_usage
+            fi
+            
+            # Check file type based on extension
+            if [[ "$1" == *.bib ]]; then
+                bib_files+=("$1")
+            elif [[ "$1" == *.md ]]; then
+                md_files+=("$1")
+            elif [[ "$1" == *.pdf || "$1" == *.html || "$1" == *.tex || "$1" == *.docx ]]; then
+                output_files+=("$1")
+                # Determine output format from file extension if not specified
+                if [ -z "$output_formats" ] || [ "$output_formats" = "${DEFAULT_FORMATS:-html}" ]; then
+                    if [[ "$1" == *.pdf ]]; then
+                        output_formats="pdf"
+                    elif [[ "$1" == *.html ]]; then
+                        output_formats="html"
+                    elif [[ "$1" == *.tex ]]; then
+                        output_formats="tex"
+                    elif [[ "$1" == *.docx ]]; then
+                        output_formats="docx"
+                    fi
+                fi
+            else
+                # Unknown file type, treat as markdown by default
+                md_files+=("$1")
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Handle config mode
+if [ "$config_mode" = true ]; then
+    edit_config
+fi
+
+# If we found bibliography files as arguments, add them to the bibliography list
+if [ ${#bib_files[@]} -gt 0 ]; then
+    for bib_file in "${bib_files[@]}"; do
+        if [ -z "$bibliography" ]; then
+            bibliography="$bib_file"
+        else
+            bibliography="$bibliography,$bib_file"
+        fi
+    done
+fi
+
+# Use the first markdown file as input file
+if [ ${#md_files[@]} -gt 0 ]; then
+    input_file="${md_files[0]}"
+    if [ ${#md_files[@]} -gt 1 ]; then
+        echo "Warning: Multiple markdown files specified. Using ${md_files[0]} as input."
+    fi
+fi
+
+# Use the first output file as the output file
+if [ ${#output_files[@]} -gt 0 ]; then
+    output_file="${output_files[0]}"
+    if [ ${#output_files[@]} -gt 1 ]; then
+        echo "Warning: Multiple output files specified. Using ${output_files[0]} as output."
+    fi
+fi
+
+# Check for input file
+if [ -z "$input_file" ]; then
+    echo "Error: No input Markdown file specified."
+    print_usage
+fi
+
+# Get the current directory
+current_dir=$(dirname "$(realpath "$input_file")")
+base_name=$(basename "${input_file%.md}")
+
+# Set default bibliography if not provided
+if [ -z "$bibliography" ]; then
+    # First, check for any .bib files in the current directory
+    bib_files=("$current_dir"/*.bib)
+    if [ ${#bib_files[@]} -gt 0 ] && [ -f "${bib_files[0]}" ]; then
+        bibliography="${bib_files[0]}"
+    # Then fallback to specific names if needed
+    elif [ -f "$current_dir/bibliography.bib" ]; then
+        bibliography="$current_dir/bibliography.bib"
+    elif [ -f "$current_dir/refs.bib" ]; then
+        bibliography="$current_dir/refs.bib"
+    elif [ -n "$DEFAULT_BIBLIOGRAPHY" ]; then
+        # Only use DEFAULT_BIBLIOGRAPHY if we haven't found any bibliography yet
+        bibliography="$DEFAULT_BIBLIOGRAPHY"
+    fi
+fi
+
+# Validate bibliography paths and convert to comma-separated list for pandoc
+if [ -n "$bibliography" ]; then
+    IFS=',' read -ra BIB_ARRAY <<< "$bibliography"
+    VALID_BIBS=()
+    for bib in "${BIB_ARRAY[@]}"; do
+        # Expand ~ to $HOME
+        bib="${bib/#\~/$HOME}"
+        if [ -f "$bib" ]; then
+            VALID_BIBS+=("$bib")
+        else
+            echo "Warning: Bibliography file not found: $bib"
+        fi
+    done
+
+    # Join valid bibliography files with commas
+    if [ ${#VALID_BIBS[@]} -gt 0 ]; then
+        bibliography=$(IFS=,; echo "${VALID_BIBS[*]}")
+    else
+        bibliography=""
+    fi
+fi
+
+# Process each output format
+IFS=',' read -ra FORMAT_ARRAY <<< "$output_formats"
+for format in "${FORMAT_ARRAY[@]}"; do
+    # Skip empty formats
+    if [ -z "$format" ]; then
+        continue
+    fi
+    
+    # Set output file for this format if not explicitly provided
+    if [ -z "$output_file" ]; then
+        this_output_file="$current_dir/$base_name.$format"
+    else
+        this_output_file="$output_file"
+    fi
+    
+    echo "Converting to $format: $this_output_file"
+    
+    # Build base pandoc command
+    pandoc_cmd="pandoc -f markdown+pipe_tables+header_attributes+tex_math_dollars"
+    
+    # Add output format and file
+    pandoc_cmd+=" -t $format -o \"$this_output_file\""
+    
+    # Add resource paths
+    pandoc_cmd+=" --resource-path=\"$current_dir:$LIB_DIR:$TEMPLATES_DIR\""
+    
+    # Add standalone option if enabled (except for HTML which uses --embed-resources --standalone)
+    if [ "$standalone" = true ] && [ "$format" != "html" ]; then
+        pandoc_cmd+=" --standalone"
+    fi
+    
+    # Add TOC if enabled
+    if [ "$toc" = true ]; then
+        pandoc_cmd+=" --toc --number-sections"
+    fi
+    
+    # Add math options if enabled
+    if [ "$math" = true ]; then
+        if [ "$format" = "html" ]; then
+            pandoc_cmd+=" --mathjax --mathml"
+        elif [ "$format" = "pdf" ] || [ "$format" = "tex" ]; then
+            pandoc_cmd+=" --pdf-engine=${PDF_ENGINE:-xelatex}"
+        fi
+    fi
+    
+    # Add bibliography and citation options if enabled
+    if [ "$citations" = true ] && [ -n "$bibliography" ]; then
+        pandoc_cmd+=" --filter pandoc-crossref"
+        pandoc_cmd+=" --citeproc"
+        pandoc_cmd+=" --bibliography=\"$bibliography\""
+        pandoc_cmd+=" --metadata link-citations=true"
+        pandoc_cmd+=" --metadata reference-section-title=\"References\""
+        pandoc_cmd+=" -M linkReferences=true"
+        pandoc_cmd+=" -M nameInLink=true"
+        
+        # Add CSL style if specified
+        if [ -n "$CSL_STYLE" ] && [ -f "$CSL_STYLE" ]; then
+            pandoc_cmd+=" --csl=\"$CSL_STYLE\""
+        fi
+    fi
+    
+    # Add format-specific templates
+    if [ "$format" = "html" ] && [ -n "$HTML_TEMPLATE" ] && [ -f "$HTML_TEMPLATE" ]; then
+        pandoc_cmd+=" --template=\"$HTML_TEMPLATE\""
+    elif [ "$format" = "pdf" ] && [ -n "$PDF_TEMPLATE" ] && [ -f "$PDF_TEMPLATE" ]; then
+        pandoc_cmd+=" --template=\"$PDF_TEMPLATE\""
+    elif [ "$format" = "tex" ] && [ -n "$PDF_TEMPLATE" ] && [ -f "$PDF_TEMPLATE" ]; then
+        pandoc_cmd+=" --template=\"$PDF_TEMPLATE\""
+    fi
+    
+    # Add format-specific options
+    if [ "$format" = "html" ]; then
+        pandoc_cmd+=" --embed-resources --standalone"  # New approach replacing --self-contained
+        pandoc_cmd+=" --highlight-style=pygments"  # Default style, widely supported
+
+        # Use custom HTML template that only includes our styles
+        if [ -f "$TEMPLATES_DIR/default.html" ]; then
+            pandoc_cmd+=" --template=\"$TEMPLATES_DIR/default.html\""
+        fi
+
+        # Add modular styles from lib directory
+        if [ -d "$LIB_DIR/css" ]; then
+            # Create a temporary file for the CSS content
+            CSS_WRAPPER=$(mktemp)
+            echo "<style>" > "$CSS_WRAPPER"
+
+            # First add the index.css which imports all modules in the right order
+            if [ -f "$LIB_DIR/css/index.css" ]; then
+                cat "$LIB_DIR/css/index.css" >> "$CSS_WRAPPER"
+            # Fall back to the legacy style.css if modularity not yet implemented
+            elif [ -f "$LIB_DIR/style.css" ]; then
+                cat "$LIB_DIR/style.css" >> "$CSS_WRAPPER"
+            fi
+
+            echo "</style>" >> "$CSS_WRAPPER"
+            pandoc_cmd+=" --include-in-header=\"$CSS_WRAPPER\""
+        fi
+
+        # Add modular scripts from lib directory
+        if [ -d "$LIB_DIR/js" ]; then
+            # Create a temporary file for the script content
+            SCRIPT_WRAPPER=$(mktemp)
+            echo "<script>" > "$SCRIPT_WRAPPER"
+
+            # Add all JS modules in the right order
+            # First add dependency modules
+            if [ -f "$LIB_DIR/js/codeBlocks.js" ]; then
+                cat "$LIB_DIR/js/codeBlocks.js" >> "$SCRIPT_WRAPPER"
+            fi
+
+            if [ -f "$LIB_DIR/js/images.js" ]; then
+                cat "$LIB_DIR/js/images.js" >> "$SCRIPT_WRAPPER"
+            fi
+
+            if [ -f "$LIB_DIR/js/content.js" ]; then
+                cat "$LIB_DIR/js/content.js" >> "$SCRIPT_WRAPPER"
+            fi
+
+            if [ -f "$LIB_DIR/js/layout.js" ]; then
+                cat "$LIB_DIR/js/layout.js" >> "$SCRIPT_WRAPPER"
+            fi
+
+            if [ -f "$LIB_DIR/js/theme.js" ]; then
+                cat "$LIB_DIR/js/theme.js" >> "$SCRIPT_WRAPPER"
+            fi
+
+            # Finally add the main index.js which initializes everything
+            if [ -f "$LIB_DIR/js/index.js" ]; then
+                cat "$LIB_DIR/js/index.js" >> "$SCRIPT_WRAPPER"
+            # Fall back to the legacy script.js if modularity not yet implemented
+            elif [ -f "$LIB_DIR/script.js" ]; then
+                cat "$LIB_DIR/script.js" >> "$SCRIPT_WRAPPER"
+            fi
+
+            echo "</script>" >> "$SCRIPT_WRAPPER"
+            pandoc_cmd+=" --include-after-body=\"$SCRIPT_WRAPPER\""
+        fi
+
+        # Add clipboard.js if requested
+        if [ "$include_clipboard" = true ]; then
+            CLIPBOARD_WRAPPER=$(mktemp)
+            echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>' > "$CLIPBOARD_WRAPPER"
+            pandoc_cmd+=" --include-in-header=\"$CLIPBOARD_WRAPPER\""
+
+            # Add script to initialize clipboard.js with SVG icon
+            CLIPBOARD_INIT=$(mktemp)
+            echo '<script>
+            // We leave this empty since our script.js handles the clipboard functionality with SVG icons
+            // This prevents duplicate buttons while keeping compatibility with clipboard.js library
+            </script>' > "$CLIPBOARD_INIT"
+            pandoc_cmd+=" --include-after-body=\"$CLIPBOARD_INIT\""
+        fi
+
+        # Add extra HTML options if specified
+        if [ -n "$HTML_EXTRA_OPTS" ]; then
+            pandoc_cmd+=" $HTML_EXTRA_OPTS"
+        fi
+    elif [ "$format" = "pdf" ]; then
+        # Add extra PDF options if specified
+        if [ -n "$PDF_EXTRA_OPTS" ]; then
+            pandoc_cmd+=" $PDF_EXTRA_OPTS"
+        fi
+    elif [ "$format" = "tex" ]; then
+        # Add extra TeX options if specified
+        if [ -n "$TEX_EXTRA_OPTS" ]; then
+            pandoc_cmd+=" $TEX_EXTRA_OPTS"
+        fi
+    elif [ "$format" = "docx" ]; then
+        # Add extra DOCX options if specified
+        if [ -n "$DOCX_EXTRA_OPTS" ]; then
+            pandoc_cmd+=" $DOCX_EXTRA_OPTS"
+        fi
+    fi
+    
+    # Add input file
+    pandoc_cmd+=" \"$input_file\""
+    
+    # Execute the command
+    eval $pandoc_cmd
+
+    # Check if the command was successful
+    conversion_status=$?
+
+    # Clean up any temporary files
+    if [ -n "$SCRIPT_WRAPPER" ] && [ -f "$SCRIPT_WRAPPER" ]; then
+        rm "$SCRIPT_WRAPPER"
+        SCRIPT_WRAPPER=""
+    fi
+
+    if [ -n "$CSS_WRAPPER" ] && [ -f "$CSS_WRAPPER" ]; then
+        rm "$CSS_WRAPPER"
+        CSS_WRAPPER=""
+    fi
+
+    if [ -n "$CLIPBOARD_WRAPPER" ] && [ -f "$CLIPBOARD_WRAPPER" ]; then
+        rm "$CLIPBOARD_WRAPPER"
+        CLIPBOARD_WRAPPER=""
+    fi
+
+    if [ -n "$CLIPBOARD_INIT" ] && [ -f "$CLIPBOARD_INIT" ]; then
+        rm "$CLIPBOARD_INIT"
+        CLIPBOARD_INIT=""
+    fi
+
+    if [ $conversion_status -eq 0 ]; then
+        echo "✓ Successfully converted to $format: $this_output_file"
+    else
+        echo "⚠️  Could not convert to $format. Please check your input files and configuration."
+        # Suppress noisy warning messages about pandoc-crossref version mismatch
+        if [ -f "$this_output_file" ]; then
+            rm "$this_output_file"  # Clean up partial output file
+        fi
+        # Continue with other formats rather than exiting completely
+        continue
+    fi
+done
+
+exit 0

@@ -1,0 +1,291 @@
+/* 
+ * Layout styles for Pandac
+ * Contains base layout, responsive behavior, and structural components
+ */
+
+/* CSS Reset for Pandoc's default styles */
+html, body {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Main layout */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  max-width: 100%; /* Override Pandoc default */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.layout-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+}
+
+.main-content {
+  padding: 0 20px;
+  margin: 0 auto;
+  max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: justify;
+}
+
+/* Mobile typography with smaller font size */
+@media (max-width: 1023px) {
+  body {
+    font-size: 9px !important; /* Very small base font as requested */
+  }
+  
+  p, li, td, th, div:not(.layout-wrapper):not(.sidebar):not(.main-content) {
+    font-size: 9px !important; /* Force small size on all text elements */
+  }
+  
+  h1 { font-size: 12px !important; }
+  h2 { font-size: 11px !important; }
+  h3 { font-size: 10px !important; }
+  h4 { font-size: 9px !important; }
+  
+  .document-meta {
+    font-size: 9px !important;
+  }
+  
+  /* Mobile TOC font size fix */
+  #TOC, #TOC *, .mobile-toc, .mobile-toc * {
+    font-size: 9px !important;
+  }
+  
+  .mobile-toc-title {
+    font-size: 10px !important;
+  }
+  
+  /* Fix for inline code on mobile */
+  :not(pre) > code {
+    font-size: 9px !important;
+  }
+  
+  /* Smaller equation size on mobile */
+  .math, .math.display {
+    font-size: 9px !important;
+  }
+  
+  .MathJax, .MathJax_Display {
+    font-size: 9px !important;
+  }
+  
+  .katex, .katex-display {
+    font-size: 9px !important;
+  }
+}
+
+/* Hide sidebar on mobile */
+.sidebar {
+  display: none;
+}
+
+/* Footer metadata styling - more discrete single line */
+.document-meta {
+  margin-top: 3rem;
+  margin-bottom: 2rem;
+  padding: 0.6rem 1rem;
+  background-color: var(--color-sidebar-bg);
+  border-radius: 0.25rem;
+  font-size: 0.8em;
+  color: var(--color-text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--color-border);
+}
+
+.document-meta p {
+  margin: 0;
+}
+
+.document-meta .meta-label {
+  font-weight: bold;
+  color: var(--color-heading);
+  margin-right: 0.3em;
+}
+
+/* Hide the default header metadata */
+header .date, 
+header .author {
+  display: none;
+}
+
+/* Mobile TOC styling - IMPROVED */
+.mobile-toc {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: var(--color-sidebar-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  display: block !important; /* Force display */
+  visibility: visible !important; /* Ensure visibility */
+  opacity: 1 !important; /* Force opacity */
+}
+
+.mobile-toc-title {
+  font-weight: bold;
+  margin-bottom: 0.8rem;
+  color: var(--color-heading);
+  text-align: center;
+}
+
+/* Table of contents */
+#TOC {
+  padding: 0;
+  width: 100%;
+}
+
+#TOC ul {
+  padding-left: 15px; /* Reduced padding */
+  list-style-type: none;
+  margin: 0.25rem 0; /* Reduced vertical margin */
+}
+
+#TOC a {
+  display: block;
+  padding: 0.15rem 0; /* Reduced vertical padding */
+  color: var(--color-link);
+  text-decoration: none;
+  line-height: 1.3; /* Tighter line height */
+}
+
+#TOC a:hover {
+  text-decoration: underline;
+}
+
+/* Desktop styles - IMPROVED */
+@media (min-width: 1024px) {
+  /* Reset Pandoc defaults on desktop */
+  html, body {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    max-width: none;
+    width: 100%;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Percentage-based centered container for all content */
+  .layout-wrapper {
+    width: 100%;
+    max-width: 75%; /* Use percentage instead of fixed pixels */
+    margin: 0 auto;
+    position: relative;
+    transition: padding-left 0.3s ease;
+  }
+
+  /* Apply padding when sidebar is visible */
+  body:not(.sidebar-hidden) .layout-wrapper {
+    padding-left: calc(20% + 1rem); /* Match sidebar width plus a bit of margin */
+  }
+
+  /* Limit padding on large screens */
+  @media (min-width: 1600px) {
+    body:not(.sidebar-hidden) .layout-wrapper {
+      padding-left: 300px; /* Cap the padding on very large screens */
+    }
+  }
+
+  /* Main content - percentage-based width, always centered within container */
+  .main-content {
+    padding: 0 4%; /* Percentage-based padding */
+    margin: 0 auto;
+    width: 100%;
+    max-width: 80%; /* Reduced by 10 percentage points */
+    box-sizing: border-box;
+    transition: margin-left 0.3s ease;
+  }
+
+  /* Sidebar positioned fixed on the viewport */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 20%; /* Percentage instead of fixed pixels */
+    max-width: 280px; /* Maximum width to prevent excessive width on large screens */
+    height: 100vh;
+    border-right: 1px solid var(--color-border);
+    padding: 0.7rem; /* Reduced from 1rem */
+    background-color: var(--color-sidebar-bg);
+    overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    box-sizing: border-box;
+  }
+
+  /* When sidebar is hidden */
+  .sidebar-hidden .sidebar {
+    transform: translateX(-100%); /* Move completely off-screen using percentage */
+  }
+
+  .sidebar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+    background: transparent;
+  }
+
+  /* Hide mobile TOC on desktop */
+  .mobile-toc {
+    display: none !important;
+  }
+
+  #TOC {
+    padding: 0;
+    flex: 1;
+  }
+
+  #TOC ul {
+    padding-left: 1rem; /* Reduced from 1.5rem */
+  }
+
+  /* Show toggle button on desktop */
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-toggle.sidebar-visible {
+    position: absolute;
+    bottom: 20px;  /* Position at bottom of sidebar instead of top */
+    right: 10px;
+  }
+
+  .sidebar-toggle.sidebar-hidden {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+  }
+
+  /* Math equations on desktop */
+  .math, .math.display {
+    text-align: center;
+  }
+}

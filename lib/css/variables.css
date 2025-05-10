@@ -1,0 +1,137 @@
+/* 
+ * Theme variables for Pandac
+ * Contains color definitions and theme switching variables
+ */
+
+/* Color themes (color blind friendly) */
+:root {
+  /* Light theme (default) */
+  --color-bg: #fcfcfc;
+  --color-text: #333333;
+  --color-text-secondary: #666666;
+  --color-heading: #2c3e50;
+  --color-heading-2: #1a5276;
+  --color-heading-3: #2874a6;
+  --color-heading-4: #3498db;
+  --color-heading-border: #3498db;
+  --color-heading-border-2: #85c1e9;
+  --color-link: #2980b9;
+  --color-border: #e1e4e8;
+  --color-sidebar-bg: #f5f7f9;
+  --color-code-bg: #f0f2f5;
+  --color-code-text: #333333;
+  --color-code-keyword: #8053a8;  /* Purple - accessible */
+  --color-code-string: #0d652d;   /* Green - accessible */
+  --color-code-comment: #5c6370;  /* Gray - accessible */
+  --color-code-function: #2a6cc2; /* Blue - accessible */
+  --color-code-variable: #b34d4d; /* Red - accessible */
+  --color-code-number: #986801;   /* Orange - accessible */
+  --color-blockquote: #666;
+  --color-button-bg: #ffffff;
+  --color-button-hover: #f0f0f0;
+  --color-button-text: #333333;
+  --color-button-border: #e1e4e8;
+  --color-highlight: #fff4dd;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-table-alt: #f8f9fa;
+
+  /* Default to system preference */
+  color-scheme: light dark;
+}
+
+/* Dark theme - using prefers-color-scheme media query */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1a1a1a;
+    --color-text: #e0e0e0;
+    --color-text-secondary: #b0b0b0;
+    --color-heading: #c9d1d9;
+    --color-heading-2: #9cb4d8;
+    --color-heading-3: #88c6ff;
+    --color-heading-4: #61afef;
+    --color-heading-border: #58a6ff;
+    --color-heading-border-2: #5893e1;
+    --color-link: #58a6ff;
+    --color-border: #30363d;
+    --color-sidebar-bg: #252526;
+    --color-code-bg: #2e2e2e;
+    --color-code-text: #e0e0e0;
+    --color-code-keyword: #c586c0;  /* Purple - accessible */
+    --color-code-string: #6cc26c;   /* Green - accessible */
+    --color-code-comment: #999999;  /* Gray - accessible */
+    --color-code-function: #61afef; /* Blue - accessible */
+    --color-code-variable: #e06c75; /* Red - accessible */
+    --color-code-number: #d19a66;   /* Orange - accessible */
+    --color-blockquote: #b0b0b0;
+    --color-button-bg: #333333;
+    --color-button-hover: #444444;
+    --color-button-text: #e0e0e0;
+    --color-button-border: #4d4d4d;
+    --color-highlight: #393327;
+    --color-shadow: rgba(0, 0, 0, 0.3);
+    --color-table-alt: #252525;
+  }
+}
+
+/* Class-based theme switching (for the toggle button) */
+body.light-theme {
+  --color-bg: #fcfcfc;
+  --color-text: #333333;
+  --color-text-secondary: #666666;
+  --color-heading: #2c3e50;
+  --color-heading-2: #1a5276;
+  --color-heading-3: #2874a6;
+  --color-heading-4: #3498db;
+  --color-heading-border: #3498db;
+  --color-heading-border-2: #85c1e9;
+  --color-link: #2980b9;
+  --color-border: #e1e4e8;
+  --color-sidebar-bg: #f5f7f9;
+  --color-code-bg: #f0f2f5;
+  --color-code-text: #333333;
+  --color-code-keyword: #8053a8;
+  --color-code-string: #0d652d;
+  --color-code-comment: #5c6370;
+  --color-code-function: #2a6cc2;
+  --color-code-variable: #b34d4d;
+  --color-code-number: #986801;
+  --color-blockquote: #666;
+  --color-button-bg: #ffffff;
+  --color-button-hover: #f0f0f0;
+  --color-button-text: #333333;
+  --color-button-border: #e1e4e8;
+  --color-highlight: #fff4dd;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-table-alt: #f8f9fa;
+}
+
+body.dark-theme {
+  --color-bg: #1a1a1a;
+  --color-text: #e0e0e0;
+  --color-text-secondary: #b0b0b0;
+  --color-heading: #c9d1d9;
+  --color-heading-2: #9cb4d8;
+  --color-heading-3: #88c6ff;
+  --color-heading-4: #61afef;
+  --color-heading-border: #58a6ff;
+  --color-heading-border-2: #5893e1;
+  --color-link: #58a6ff;
+  --color-border: #30363d;
+  --color-sidebar-bg: #252526;
+  --color-code-bg: #2e2e2e;
+  --color-code-text: #e0e0e0;
+  --color-code-keyword: #c586c0;
+  --color-code-string: #6cc26c;
+  --color-code-comment: #999999;
+  --color-code-function: #61afef;
+  --color-code-variable: #e06c75;
+  --color-code-number: #d19a66;
+  --color-blockquote: #b0b0b0;
+  --color-button-bg: #333333;
+  --color-button-hover: #444444;
+  --color-button-text: #e0e0e0;
+  --color-button-border: #4d4d4d;
+  --color-highlight: #393327;
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-table-alt: #252525;
+}
