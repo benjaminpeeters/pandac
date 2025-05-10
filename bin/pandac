@@ -53,6 +53,9 @@ CSL_STYLE=""
 # Include clipboard.js for code blocks by default (true/false)
 DEFAULT_CLIPBOARD="true"
 
+# Suppress warnings from pandoc-crossref and other filters (true/false)
+SUPPRESS_WARNINGS="true"
+
 # Extra pandoc options for specific formats
 # PDF_EXTRA_OPTS="--variable=geometry:margin=1in"
 # HTML_EXTRA_OPTS=""
@@ -75,6 +78,7 @@ standalone=true
 math=true
 citations=true
 include_clipboard="${DEFAULT_CLIPBOARD:-false}"
+suppress_warnings="${SUPPRESS_WARNINGS:-true}"
 config_mode=false
 
 function print_usage() {
@@ -92,6 +96,7 @@ function print_usage() {
     echo "  -m, --no-math             Disable math rendering"
     echo "  -c, --no-citations        Disable citation processing"
     echo "  -s, --clipboard           Include clipboard.js for code copying (HTML only)"
+    echo "  -w, --warnings            Show all warnings (default: hidden)"
     echo "  --config                  Edit configuration settings"
     echo "  -h, --help                Display this help message"
     echo "  -v, --version             Display version information"
@@ -164,6 +169,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -s|--clipboard)
             include_clipboard=true
+            shift
+            ;;
+        -w|--warnings)
+            suppress_warnings=false
             shift
             ;;
         --config)
@@ -305,9 +314,7 @@ for format in "${FORMAT_ARRAY[@]}"; do
     else
         this_output_file="$output_file"
     fi
-    
-    echo "Converting to $format: $this_output_file"
-    
+
     # Build base pandoc command
     pandoc_cmd="pandoc -f markdown+pipe_tables+header_attributes+tex_math_dollars"
     
@@ -338,14 +345,20 @@ for format in "${FORMAT_ARRAY[@]}"; do
     
     # Add bibliography and citation options if enabled
     if [ "$citations" = true ] && [ -n "$bibliography" ]; then
+        # Check if pandoc and pandoc-crossref versions are compatible
+        PANDOC_VERSION=$(pandoc --version | head -n 1 | cut -d' ' -f2)
+        CROSSREF_VERSION=$(pandoc-crossref --version 2>/dev/null | grep -oP "built with Pandoc v\K[0-9.]+")
+
+        # Set up crossref filter - we'll handle warnings at execution time
         pandoc_cmd+=" --filter pandoc-crossref"
+
         pandoc_cmd+=" --citeproc"
         pandoc_cmd+=" --bibliography=\"$bibliography\""
         pandoc_cmd+=" --metadata link-citations=true"
         pandoc_cmd+=" --metadata reference-section-title=\"References\""
         pandoc_cmd+=" -M linkReferences=true"
         pandoc_cmd+=" -M nameInLink=true"
-        
+
         # Add CSL style if specified
         if [ -n "$CSL_STYLE" ] && [ -f "$CSL_STYLE" ]; then
             pandoc_cmd+=" --csl=\"$CSL_STYLE\""
@@ -468,8 +481,14 @@ for format in "${FORMAT_ARRAY[@]}"; do
     # Add input file
     pandoc_cmd+=" \"$input_file\""
     
-    # Execute the command
-    eval $pandoc_cmd
+    # Execute the command with error handling based on preferences
+    if [ "$suppress_warnings" = true ]; then
+        # Suppress all warnings (stderr) but still show errors that cause non-zero exit code
+        eval "$pandoc_cmd 2>/dev/null || $pandoc_cmd"
+    else
+        # Show all output including warnings
+        eval $pandoc_cmd
+    fi
 
     # Check if the command was successful
     conversion_status=$?
