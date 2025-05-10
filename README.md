@@ -1,8 +1,8 @@
-# Pandac - Pandoc Academic Document Converter
+# Pandac - Pandoc Academic Markdown Converter
 
 **⚠️ Work in Progress ⚠️**
 
-A versatile command-line tool for converting academic Markdown documents to multiple formats (HTML, PDF, LaTeX, DOCX) simultaneously using Pandoc.
+A command-line tool for converting academic Markdown documents to multiple formats (HTML, PDF, LaTeX, DOCX) using Pandoc.
 
 ## Features
 
@@ -18,6 +18,8 @@ A versatile command-line tool for converting academic Markdown documents to mult
 - Configurable defaults
 - Smart file type detection
 - Automatic styling and scripting (no need for YAML headers)
+- Clean output with suppressed warnings by default
+- Responsive layout with light/dark theme support for HTML output
 - Professional error handling and feedback
 
 ## Installation
@@ -64,6 +66,7 @@ Pandac intelligently identifies files by extension:
 - `-m, --no-math`: Disable math rendering
 - `-c, --no-citations`: Disable citation processing
 - `-s, --clipboard`: Include clipboard.js for code copying (HTML only)
+- `-w, --warnings`: Show all warnings (default: hidden)
 - `--config`: Edit configuration settings
 - `-h, --help`: Display help message
 - `-v, --version`: Display version information
@@ -94,6 +97,9 @@ pandac document.md refs.bib output.pdf
 # Multiple formats with bibliography
 pandac refs.bib document.md -f pdf,html
 
+# Show all warnings (including pandoc-crossref version warnings)
+pandac -w document.md
+
 # Edit configuration
 pandac --config
 ```
@@ -109,6 +115,7 @@ The configuration includes:
 - PDF engine selection
 - Custom templates for each format
 - Citation style (CSL) specification
+- Warning suppression controls
 - Format-specific extra options
 
 To edit the configuration:
