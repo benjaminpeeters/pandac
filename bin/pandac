@@ -57,7 +57,7 @@ DEFAULT_CLIPBOARD="true"
 SUPPRESS_WARNINGS="true"
 
 # Extra pandoc options for specific formats
-# PDF_EXTRA_OPTS="--variable=geometry:margin=1in"
+# PDF_EXTRA_OPTS="--variable=geometry:margin=0.93in --variable=secnumdepth:2"
 # HTML_EXTRA_OPTS=""
 # TEX_EXTRA_OPTS=""
 # DOCX_EXTRA_OPTS=""
@@ -332,6 +332,9 @@ for format in "${FORMAT_ARRAY[@]}"; do
     # Add TOC if enabled
     if [ "$toc" = true ]; then
         pandoc_cmd+=" --toc --number-sections"
+    elif [ "$format" = "pdf" ] || [ "$format" = "tex" ]; then
+        # For PDF/LaTeX, always add section numbering even without TOC
+        pandoc_cmd+=" --number-sections"
     fi
     
     # Add math options if enabled
