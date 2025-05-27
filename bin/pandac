@@ -35,8 +35,9 @@ DEFAULT_BIBLIOGRAPHY="$HOME/MEGA/config/latex/bibliography/bibliographie.bib"
 # Comma-separated list of: pdf,html,tex,docx
 DEFAULT_FORMATS="pdf,html"
 
-# Always include table of contents (true/false)
-ALWAYS_TOC="true"
+# Always include table of contents (true/false/auto)
+# auto = HTML gets TOC by default, PDF doesn't
+ALWAYS_TOC="auto"
 
 # Default PDF engine (xelatex, pdflatex, lualatex)
 PDF_ENGINE="xelatex"
@@ -57,10 +58,12 @@ DEFAULT_CLIPBOARD="true"
 SUPPRESS_WARNINGS="true"
 
 # Extra pandoc options for specific formats
-# PDF_EXTRA_OPTS="--variable=geometry:margin=0.93in --variable=secnumdepth:2"
-# HTML_EXTRA_OPTS=""
-# TEX_EXTRA_OPTS=""
-# DOCX_EXTRA_OPTS=""
+# PDF numbering depth is already set to 2 (sections and subsections)
+PDF_EXTRA_OPTS="--variable=geometry:margin=0.93in --variable=secnumdepth:2"
+# HTML numbering depth is handled automatically in the script
+HTML_EXTRA_OPTS=""
+TEX_EXTRA_OPTS=""
+DOCX_EXTRA_OPTS=""
 EOL
     echo "Created default configuration file at $CONFIG_FILE"
 fi
@@ -73,7 +76,7 @@ bibliography=""  # We'll only use DEFAULT_BIBLIOGRAPHY if no bib is found
 output_formats="${DEFAULT_FORMATS:-html}"
 output_file=""
 input_file=""
-toc="${ALWAYS_TOC:-true}"
+toc="${ALWAYS_TOC:-auto}"
 standalone=true
 math=true
 citations=true
@@ -329,12 +332,26 @@ for format in "${FORMAT_ARRAY[@]}"; do
         pandoc_cmd+=" --standalone"
     fi
     
-    # Add TOC if enabled
-    if [ "$toc" = true ]; then
-        pandoc_cmd+=" --toc --number-sections"
-    elif [ "$format" = "pdf" ] || [ "$format" = "tex" ]; then
-        # For PDF/LaTeX, always add section numbering even without TOC
+    # Handle TOC and numbering separately based on format
+    if [ "$format" = "html" ]; then
+        # HTML: default to include TOC unless explicitly disabled with -n flag
+        if [ "$toc" = "auto" ] || [ "$toc" = true ]; then
+            pandoc_cmd+=" --toc --toc-depth=2"
+        fi
+        # Always number sections/subsections for HTML
         pandoc_cmd+=" --number-sections"
+    elif [ "$format" = "pdf" ] || [ "$format" = "tex" ]; then
+        # PDF/LaTeX: only include TOC if explicitly enabled (not for "auto")
+        if [ "$toc" = true ]; then
+            pandoc_cmd+=" --toc --toc-depth=2"
+        fi
+        # Always number sections/subsections for PDF/LaTeX
+        pandoc_cmd+=" --number-sections"
+    else
+        # Other formats: use original behavior
+        if [ "$toc" = true ]; then
+            pandoc_cmd+=" --toc --toc-depth=2 --number-sections"
+        fi
     fi
     
     # Add math options if enabled
@@ -460,6 +477,9 @@ for format in "${FORMAT_ARRAY[@]}"; do
             pandoc_cmd+=" --include-after-body=\"$CLIPBOARD_INIT\""
         fi
 
+        # Set default numbering depth for HTML (sections and subsections only)
+        pandoc_cmd+=" --metadata=secnumdepth:2"
+        
         # Add extra HTML options if specified
         if [ -n "$HTML_EXTRA_OPTS" ]; then
             pandoc_cmd+=" $HTML_EXTRA_OPTS"
