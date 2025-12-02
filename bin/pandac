@@ -324,7 +324,7 @@ for format in "${FORMAT_ARRAY[@]}"; do
     fi
 
     # Build base pandoc command
-    pandoc_cmd="pandoc -f markdown+pipe_tables+header_attributes+tex_math_dollars"
+    pandoc_cmd="pandoc -f markdown+pipe_tables+header_attributes+tex_math_dollars+lists_without_preceding_blankline+short_subsuperscripts+autolink_bare_uris+mark+emoji"
     
     # Add output format and file
     pandoc_cmd+=" -t $format -o \"$this_output_file\""
