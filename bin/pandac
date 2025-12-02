@@ -308,6 +308,10 @@ if [ -n "$bibliography" ]; then
     fi
 fi
 
+# Preprocess input to ensure blank lines before tables
+PREPROCESSED_INPUT=$(mktemp)
+awk -f "$LIB_DIR/preprocess_tables.awk" "$input_file" > "$PREPROCESSED_INPUT"
+
 # Process each output format
 IFS=',' read -ra FORMAT_ARRAY <<< "$output_formats"
 for format in "${FORMAT_ARRAY[@]}"; do
@@ -506,8 +510,8 @@ for format in "${FORMAT_ARRAY[@]}"; do
         fi
     fi
     
-    # Add input file
-    pandoc_cmd+=" \"$input_file\""
+    # Add preprocessed input file
+    pandoc_cmd+=" \"$PREPROCESSED_INPUT\""
     
     # Execute the command with error handling based on preferences
     if [ "$suppress_warnings" = true ]; then
@@ -554,5 +558,10 @@ for format in "${FORMAT_ARRAY[@]}"; do
         continue
     fi
 done
+
+# Clean up preprocessed input file
+if [ -n "$PREPROCESSED_INPUT" ] && [ -f "$PREPROCESSED_INPUT" ]; then
+    rm "$PREPROCESSED_INPUT"
+fi
 
 exit 0
