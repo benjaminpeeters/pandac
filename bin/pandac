@@ -494,11 +494,15 @@ for format in "${FORMAT_ARRAY[@]}"; do
             pandoc_cmd+=" $HTML_EXTRA_OPTS"
         fi
     elif [ "$format" = "pdf" ]; then
+        # Add period after section numbers (1. instead of 1)
+        pandoc_cmd+=" -H <(echo '\usepackage{titlesec}\titlelabel{\thetitle.\enspace}')"
         # Add extra PDF options if specified
         if [ -n "$PDF_EXTRA_OPTS" ]; then
             pandoc_cmd+=" $PDF_EXTRA_OPTS"
         fi
     elif [ "$format" = "tex" ]; then
+        # Add period after section numbers (1. instead of 1)
+        pandoc_cmd+=" -H <(echo '\usepackage{titlesec}\titlelabel{\thetitle.\enspace}')"
         # Add extra TeX options if specified
         if [ -n "$TEX_EXTRA_OPTS" ]; then
             pandoc_cmd+=" $TEX_EXTRA_OPTS"
