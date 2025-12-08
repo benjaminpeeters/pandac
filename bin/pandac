@@ -312,6 +312,20 @@ fi
 PREPROCESSED_INPUT=$(mktemp)
 awk -f "$LIB_DIR/preprocess_tables.awk" "$input_file" > "$PREPROCESSED_INPUT"
 
+# Detect if TikZ is used in the document
+uses_tikz=false
+if grep -qE '\\begin\{tikzpicture\}|\\tikz[^a-zA-Z]|\\usetikzlibrary' "$input_file"; then
+    uses_tikz=true
+fi
+
+# Build common LaTeX header for PDF/TeX formats
+latex_header='\usepackage{titlesec}\titlelabel{\thetitle.\enspace}'  # Period after section numbers
+latex_header+='\usepackage{float}\floatplacement{figure}{H}'         # Keep figures in place
+latex_header+='\usepackage{subcaption}'                              # Subfigures support
+if [ "$uses_tikz" = true ]; then
+    latex_header+='\usepackage{tikz}\usetikzlibrary{arrows,shapes,positioning,calc,decorations.pathmorphing}'
+fi
+
 # Process each output format
 IFS=',' read -ra FORMAT_ARRAY <<< "$output_formats"
 for format in "${FORMAT_ARRAY[@]}"; do
@@ -329,9 +343,15 @@ for format in "${FORMAT_ARRAY[@]}"; do
 
     # Build base pandoc command
     pandoc_cmd="pandoc -f markdown+pipe_tables+header_attributes+tex_math_dollars+lists_without_preceding_blankline+short_subsuperscripts+autolink_bare_uris+mark+emoji"
-    
+
+    # Map format to pandoc output format (tex -> latex)
+    pandoc_format="$format"
+    if [ "$format" = "tex" ]; then
+        pandoc_format="latex"
+    fi
+
     # Add output format and file
-    pandoc_cmd+=" -t $format -o \"$this_output_file\""
+    pandoc_cmd+=" -t $pandoc_format -o \"$this_output_file\""
     
     # Add resource paths
     pandoc_cmd+=" --resource-path=\"$current_dir:$LIB_DIR:$TEMPLATES_DIR\""
@@ -494,16 +514,12 @@ for format in "${FORMAT_ARRAY[@]}"; do
             pandoc_cmd+=" $HTML_EXTRA_OPTS"
         fi
     elif [ "$format" = "pdf" ]; then
-        # Add period after section numbers (1. instead of 1)
-        pandoc_cmd+=" -H <(echo '\usepackage{titlesec}\titlelabel{\thetitle.\enspace}')"
-        # Add extra PDF options if specified
+        pandoc_cmd+=" -H <(echo '$latex_header')"
         if [ -n "$PDF_EXTRA_OPTS" ]; then
             pandoc_cmd+=" $PDF_EXTRA_OPTS"
         fi
     elif [ "$format" = "tex" ]; then
-        # Add period after section numbers (1. instead of 1)
-        pandoc_cmd+=" -H <(echo '\usepackage{titlesec}\titlelabel{\thetitle.\enspace}')"
-        # Add extra TeX options if specified
+        pandoc_cmd+=" -H <(echo '$latex_header')"
         if [ -n "$TEX_EXTRA_OPTS" ]; then
             pandoc_cmd+=" $TEX_EXTRA_OPTS"
         fi
