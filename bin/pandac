@@ -325,6 +325,10 @@ latex_header+='\usepackage{subcaption}'                              # Subfigure
 if [ "$uses_tikz" = true ]; then
     latex_header+='\usepackage{tikz}\usetikzlibrary{arrows,shapes,positioning,calc,decorations.pathmorphing}'
 fi
+# Hyperref colors matching bp-colors.sty / bp-refs.sty
+latex_header+='\definecolor{bpred}{rgb}{0.6, 0.0, 0.0}'
+latex_header+='\definecolor{bpblue}{rgb}{0.0, 0.0, 0.6}'
+latex_header+='\definecolor{bpurlblue}{rgb}{0.0, 0.5, 0.6}'
 
 # Process each output format
 IFS=',' read -ra FORMAT_ARRAY <<< "$output_formats"
@@ -400,6 +404,14 @@ for format in "${FORMAT_ARRAY[@]}"; do
 
         # Set up crossref filter - we'll handle warnings at execution time
         pandoc_cmd+=" --filter pandoc-crossref"
+
+        # Force consistent capitalized prefixes for all cross-references
+        # This ensures "Figure X" regardless of whether @fig: or @Fig: is used
+        pandoc_cmd+=" -M figPrefix=\"Figure\""
+        pandoc_cmd+=" -M tblPrefix=\"Table\""
+        pandoc_cmd+=" -M secPrefix=\"Section\""
+        pandoc_cmd+=" -M eqnPrefix=\"Equation\""
+        pandoc_cmd+=" -M lstPrefix=\"Listing\""
 
         pandoc_cmd+=" --citeproc"
         pandoc_cmd+=" --bibliography=\"$bibliography\""
@@ -515,11 +527,15 @@ for format in "${FORMAT_ARRAY[@]}"; do
         fi
     elif [ "$format" = "pdf" ]; then
         pandoc_cmd+=" -H <(echo '$latex_header')"
+        # Use pandoc variables for hyperref colors (colors defined in header)
+        pandoc_cmd+=" -V colorlinks=true -V linkcolor=bpred -V citecolor=bpblue -V urlcolor=bpurlblue"
         if [ -n "$PDF_EXTRA_OPTS" ]; then
             pandoc_cmd+=" $PDF_EXTRA_OPTS"
         fi
     elif [ "$format" = "tex" ]; then
         pandoc_cmd+=" -H <(echo '$latex_header')"
+        # Use pandoc variables for hyperref colors (colors defined in header)
+        pandoc_cmd+=" -V colorlinks=true -V linkcolor=bpred -V citecolor=bpblue -V urlcolor=bpurlblue"
         if [ -n "$TEX_EXTRA_OPTS" ]; then
             pandoc_cmd+=" $TEX_EXTRA_OPTS"
         fi
